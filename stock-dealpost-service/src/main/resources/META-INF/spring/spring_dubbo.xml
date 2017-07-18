@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	   http://code.alibabatech.com/schema/dubbo
+	   http://code.alibabatech.com/schema/dubbo/dubbo.xsd ">
+
+    <dubbo:application name="stock_dealpost_service" owner="stock" logger="slf4j"/>
+
+    <dubbo:registry protocol="zookeeper" address="${dubbo.zk.list}" timeout="30000" session="60000"/>
+
+    <dubbo:service  interface="com.dangdang.stock.api.StockDealPostService" ref="stockDealPostService"/>
+
+    <dubbo:provider port="${dubbo.port}" threadpool="fixed" threads="50" timeout="3000" protocol="dubbo"/>
+
+</beans>

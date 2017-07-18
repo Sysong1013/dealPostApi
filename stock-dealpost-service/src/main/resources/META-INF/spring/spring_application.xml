@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <context:annotation-config/>
+
+    <aop:aspectj-autoproxy  proxy-target-class="true"/>
+
+    <context:property-placeholder location="classpath:./*.properties"/>
+
+    <context:component-scan base-package="com.dangdang.stock.dealpost" />
+
+    <bean class="com.dangdang.stock.dealpost.common.HealthCheck" init-method="init"/>
+
+    <bean class="com.dangdang.stock.dealpost.util.MySignalHandler" init-method="init"/>
+
+    <bean id="daoWarnLog" class="com.dangdang.stock.dealpost.common.DaoWarnLog"/>
+
+    <aop:config>
+        <aop:aspect ref="daoWarnLog">
+            <aop:pointcut id="warnLog_pointCut"
+                          expression="execution(public * com.dangdang.stock.dealpost.dao.impl.*.*(..))"/>
+            <aop:around pointcut-ref="warnLog_pointCut" method="warnLog"/>
+        </aop:aspect>
+    </aop:config>
+</beans>

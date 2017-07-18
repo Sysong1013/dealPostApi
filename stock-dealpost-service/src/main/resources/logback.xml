@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="log.context.name" value="stock_dealpost"/>
+    <property name="log.charset" value="UTF-8"/>
+    <property name="log.maxHistory" value="30"/>
+    <property name="log.pattern" value="[%-5level] %date --%thread-- [%logger] %msg %n"/>
+    <property name="log.async.queue.size" value="1024"/>
+    <property name="baseLogPath" value="/data/log"/>
+    <property name="errorInfoLogBase" value="/var/log/errorinfo"/>
+
+    <include resource="conf/includedLogbackConfig.xml" optional="true"/>
+
+    <contextName>${log.context.name}</contextName>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="${log.charset}">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${baseLogPath}/${log.context.name}/common.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${baseLogPath}/${log.context.name}/common.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>${log.maxHistory}</maxHistory>
+        </rollingPolicy>
+        <encoder charset="${log.charset}">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>${log.async.queue.size}</queueSize>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!--<appender name="shopUpdateAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+        <!--<file>${baseLogPath}/${log.context.name}/shopupdate.log</file>-->
+        <!--<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+            <!--<fileNamePattern>${baseLogPath}/${log.context.name}/shopupdate.log.%d{yyyy-MM-dd}.gz</fileNamePattern>-->
+            <!--<maxHistory>168</maxHistory>-->
+        <!--</rollingPolicy>-->
+        <!--<encoder>-->
+            <!--<pattern>%-5level##%d{HH:mm:ss}&#45;&#45;&#45;&#45;%msg%n</pattern>-->
+        <!--</encoder>-->
+        <!--<filter class="ch.qos.logback.classic.filter.LevelFilter">-->
+            <!--<level>INFO</level>-->
+            <!--<onMatch>ACCEPT</onMatch>-->
+            <!--<onMismatch>DENY</onMismatch>-->
+        <!--</filter>-->
+    <!--</appender>-->
+
+    <appender name="slaLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${baseLogPath}/${log.context.name}/dailylog.%d{yyyy-MM-dd.HH}</fileNamePattern>
+            <maxHistory>32</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="appError" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${errorInfoLogBase}/${log.context.name}/appError.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${errorInfoLogBase}/${log.context.name}/appError.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="appErrorRedis" class="com.dangdang.modules.hestia.appenders.logback.RedisAppender">
+        <host>elkredis.idc3:8379</host>
+        <queueName>error_info</queueName>
+    </appender>
+
+
+    <logger name="application.error" level="WARN" additivity="false">
+        <appender-ref ref="appErrorRedis"/>
+        <appender-ref ref="appError"/>
+    </logger>
+
+    <!--<logger name="com.dangdang.stock.shopstockupdate.service.ShopStockUpdateServiceImpl" level="INFO"-->
+            <!--additivity="false">-->
+        <!--<appender-ref ref="shopUpdateAppender"/>-->
+    <!--</logger>-->
+
+    <!--<logger name="com.dangdang.stock.shopstockupdate.service.MQService" level="INFO" additivity="false">-->
+        <!--<appender-ref ref="shopUpdateAppender"/>-->
+    <!--</logger>-->
+
+    <logger name="com.dangdang.stock.dealpost.common.SlaLog" level="INFO" additivity="false">
+        <appender-ref ref="slaLogAppender"/>
+    </logger>
+
+    <!--<logger name="com.dangdang.stock.shopstockupdate.ShopStockUpdateServiceProviderMain" level="INFO" additivity="false">-->
+        <!--<appender-ref ref="ASYNC_FILE"/>-->
+    <!--</logger>-->
+
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+</configuration>

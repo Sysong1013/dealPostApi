@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.dangdang.stock.dealpost.dao.ProductWarehouseStockMapper">
+
+    <update id="updateStockBatch" parameterType="java.util.List">
+
+        <foreach collection="list" item="p" separator=";">
+            <choose>
+                <when test="p.stockTypeId == 0">
+
+                    UPDATE product_warehouse_stock SET post_stock_quantity = IFNULL(post_stock_quantity, 0) + #{p.opNum}
+                    ,effect_post_quantity = IFNULL(effect_post_quantity,0) + #{p.effectPostQuantity}
+                    ,post_last_changed_date = now(),last_changed_date = now()
+                    WHERE product_id=#{p.productId} AND warehouse_id = #{p.warehouseId} AND stock_type_id = 0
+                    AND (stock_quantity+IFNULL(stock_quantity_ts,0)+IFNULL(stock_quantity_allot,0)-IFNULL(post_stock_quantity,0)>= #{p.opNum})
+
+                </when>
+
+                <when test="p.stockTypeId > 0">
+
+                    UPDATE product_warehouse_stock SET post_stock_quantity = IFNULL(post_stock_quantity,0) + #{p.opNum}
+                    ,post_last_changed_date = now(),last_changed_date = now()
+                    WHERE product_id=#{p.productId} AND warehouse_id = #{p.warehouseId} AND stock_type_id = #{p.stockTypeId};
+
+                    UPDATE product_warehouse_stock SET effect_post_quantity = IFNULL(effect_post_quantity,0) + #{p.effectPostQuantity}
+                    WHERE product_id=#{p.productId} AND warehouse_id = #{p.warehouseId} AND stock_type_id = 0
+                    AND (stock_quantity+IFNULL(stock_quantity_ts,0)+IFNULL(stock_quantity_allot,0)-IFNULL(post_stock_quantity,0)>= #{opNum})
+
+                </when>
+            </choose>
+        </foreach>
+    </update>
+
+
+</mapper>
