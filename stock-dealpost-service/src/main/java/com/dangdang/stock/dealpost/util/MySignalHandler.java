@@ -20,24 +20,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MySignalHandler {
     public void init() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                SubSignalHandler subSignalHandler = new SubSignalHandler();
-                // 注册对指定信号的处理
-                Signal.handle(new Signal("TERM"), subSignalHandler);    // kill or kill -15
-                Signal.handle(new Signal("INT"), subSignalHandler);     // kill -2
-
-                System.out.println("[Thread:" + Thread.currentThread().getName() + "] is sleep");
-                while (true) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+        SubSignalHandler subSignalHandler = new SubSignalHandler();
+        // 注册对指定信号的处理
+        Signal.handle(new Signal("TERM"), subSignalHandler);    // kill or kill -15
+        Signal.handle(new Signal("INT"), subSignalHandler);     // kill -2
     }
 
     @SuppressWarnings("restriction")
@@ -68,8 +54,6 @@ public class MySignalHandler {
             }
         }
     }
-
-
 }
 
 

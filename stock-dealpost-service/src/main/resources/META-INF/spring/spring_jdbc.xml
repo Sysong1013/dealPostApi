@@ -17,23 +17,15 @@
         <property name="initialSize" value="${jdbc.initial.size}"/>
         <property name="minIdle" value="${jdbc.min.idle}" />
         <property name="maxWait" value="${jdbc.max.wait}" />
+        <property name="validationQuery" value="SELECT 1"/>
     </bean>
 
-    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
-        <property name="dataSource" ref="dataSource" />
-        <property name="mapperLocations" value="classpath:META-INF/mybatis/*.xml"/>
-        <property name="typeAliasesPackage" value="com.dangdang.stock.dealpost.dao" />
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
     </bean>
-
-    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.dangdang.stock.dealpost.dao" />
-        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
-    </bean>
-
     <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager" >
         <property name="dataSource" ref="dataSource"  />
     </bean>
-
     <tx:annotation-driven transaction-manager="txManager" />
 
 </beans>

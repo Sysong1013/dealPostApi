@@ -1,6 +1,5 @@
 package com.dangdang.stock.dealpost.common;
 
-import com.dangdang.stock.dealpost.util.SystemConstant;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -26,9 +25,11 @@ public class HealthCheck {
     @Value("${healthCheck.port}")
     private int port;
 
+    private final static String HEALTH_CHECK_URL = "/dealpost/healthcheck";
+
     public void init() {
         PathHandler handler = new PathHandler();
-        handler.addExactPath(SystemConstant.HEALTH_CHECK_URL, new HttpHandler() {
+        handler.addExactPath(HEALTH_CHECK_URL, new HttpHandler() {
 
             final Date uptime = new Date();
 

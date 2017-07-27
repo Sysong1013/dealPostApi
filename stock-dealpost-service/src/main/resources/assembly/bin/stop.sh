@@ -7,17 +7,11 @@ CONF_DIR=$DEPLOY_DIR/conf
 
 SERVER_NAME=`pwd | awk -F '/' '{print $NF}' `
 
-
-
 PIDS=`ps aux | grep "$CONF_DIR" |grep -v grep |awk '{print $2}'`
 if [ -z "$PIDS" ]; then
     echo "ERROR: The $SERVER_NAME does not started!"
     exit 1
 fi
-
-#if [ "$1" != "skip" ]; then
-#    $BIN_DIR/dump.sh
-#fi
 
 echo -e "Stopping the $SERVER_NAME ...\c"
 for PID in $PIDS ; do

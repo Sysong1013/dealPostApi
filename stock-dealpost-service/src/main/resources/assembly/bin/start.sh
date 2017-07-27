@@ -16,7 +16,6 @@ DEPLOY_DIR=`pwd`
 CONF_DIR=${DEPLOY_DIR}/conf
 SERVER_NAME=`pwd | awk -F '/' '{print $NF}' `
 LOGS_FILE=""
-DEBUG_PORT=10001
 
 PIDS=`ps aux | grep "$CONF_DIR" | grep -v grep |awk '{print $2}'`
 if [ -n "${PIDS}" ]; then
@@ -46,18 +45,9 @@ fi
 STDOUT_FILE=${LOGS_DIR}/stdout.log
 
 LIB_DIR=${DEPLOY_DIR}/lib
-LIB_JARS=`ls ${LIB_DIR}|grep .jar|awk '{print "'${LIB_DIR}'/"$0}'|tr "\n" ":"`
+LIB_JARS=${DEPLOY_DIR}/lib/*
 
 JAVA_OPTS=" -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true "
-JAVA_DEBUG_OPTS=""
-if [ "$1" = "debug" ]; then
-    JAVA_DEBUG_OPTS=" -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,address=${DEBUG_PORT},server=y,suspend=n "
-fi
-
-JAVA_JMX_OPTS=""
-if [ "$1" = "jmx" ]; then
-    JAVA_JMX_OPTS=" -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false "
-fi
 
 JAVA_MEM_OPTS=""
 BITS=`java -version 2>&1 | grep -i 64-bit`
@@ -69,13 +59,7 @@ fi
 
 echo -e "Starting the ${SERVER_NAME} ...\c"
 
-NOW=`date +%Y%m%d%H%M%S`
-
-DATA_ROOT=/data
-
-GC_OPTS="-Xloggc:${LOGS_DIR}/${SERVER_NAME}-gc-$NOW.log -XX:+PrintGCDateStamps -XX:+PrintGCDetails -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$LOGS_DIR/$SERVER_NAME-heap-dump-$NOW.log"
-
-nohup java ${JAVA_OPTS} ${JAVA_MEM_OPTS} ${JAVA_DEBUG_OPTS} ${JAVA_JMX_OPTS} ${GC_OPTS} -classpath ${CONF_DIR}:${LIB_JARS} ${MAIN_CLASS} > ${STDOUT_FILE} 2>&1 &
+nohup java ${JAVA_OPTS} ${JAVA_MEM_OPTS} -classpath ${CONF_DIR}:${LIB_JARS} ${MAIN_CLASS} > ${STDOUT_FILE} 2>&1 &
 
 COUNT=0
 while [ ${COUNT} -lt 1 ]; do
