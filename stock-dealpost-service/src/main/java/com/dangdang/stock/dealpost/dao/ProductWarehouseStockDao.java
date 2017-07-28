@@ -21,7 +21,7 @@ public class ProductWarehouseStockDao {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final String sql1 =
+    private final String SQL1 =
             "UPDATE product_warehouse_stock \n" +
                     "SET post_stock_quantity = IFNULL(post_stock_quantity, 0) + %d," +
                     "   effect_post_quantity = IFNULL(effect_post_quantity,0) + %d," +
@@ -30,12 +30,12 @@ public class ProductWarehouseStockDao {
                     "   AND (stock_quantity + IFNULL(stock_quantity_ts,0) + IFNULL(stock_quantity_allot,0) " +
                     "- IFNULL(post_stock_quantity,0) >= %d)";
 
-    private final String sql2 =
+    private final String SQL2 =
             "UPDATE product_warehouse_stock " +
                     "SET effect_post_quantity = IFNULL(effect_post_quantity,0) + %d " +
                     "WHERE product_id = %d AND warehouse_id = %d AND stock_type_id = 0";
 
-    private final String sql3 =
+    private final String SQL3 =
             "UPDATE product_warehouse_stock " +
                     "SET post_stock_quantity = IFNULL(post_stock_quantity,0) + %d" +
                     "   ,post_last_changed_date = now(),last_changed_date = now() " +
@@ -49,16 +49,16 @@ public class ProductWarehouseStockDao {
     private String[] buildSql(List<ProductWStock> productWStockList) {
         ArrayList<String> strArr = new ArrayList<>();
         for (ProductWStock productWStock : productWStockList) {
-            Long productId = productWStock.getProductId();
-            Integer warehouseId = productWStock.getWarehouseId();
-            Integer opNum = productWStock.getOpNum();
-            Integer effectPostQuantity = productWStock.getEffectPostQuantity();
-            Integer stockTypeId = productWStock.getStockTypeId();
-            if (stockTypeId.equals(0)) {
-                strArr.add(String.format(sql1, opNum, effectPostQuantity, productId, warehouseId, opNum));
-            } else if (stockTypeId.compareTo(0) == 1) {
-                strArr.add(String.format(sql2, effectPostQuantity, productId, warehouseId));
-                strArr.add(String.format(sql3, opNum, productId, warehouseId, stockTypeId));
+            long productId = productWStock.getProductId();
+            int warehouseId = productWStock.getWarehouseId();
+            int opNum = productWStock.getOpNum();
+            int effectPostQuantity = productWStock.getEffectPostQuantity();
+            int stockTypeId = productWStock.getStockTypeId();
+            if (stockTypeId == 0) {
+                strArr.add(String.format(SQL1, opNum, effectPostQuantity, productId, warehouseId, opNum));
+            } else if (stockTypeId > 1) {
+                strArr.add(String.format(SQL2, effectPostQuantity, productId, warehouseId));
+                strArr.add(String.format(SQL3, opNum, productId, warehouseId, stockTypeId));
             }
         }
         return strArr.toArray(new String[strArr.size()]);

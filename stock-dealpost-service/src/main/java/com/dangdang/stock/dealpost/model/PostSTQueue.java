@@ -11,11 +11,11 @@ import lombok.ToString;
 @Getter
 @ToString
 public class PostSTQueue {
-    private Long orderId;
-    private Long productId;
-    private Integer warehouseId;
-    private Integer opNum;
-    private Integer stockTypeId;
+    private long orderId;
+    private long productId;
+    private int warehouseId;
+    private int opNum;
+    private int stockTypeId;
     private String cartPostStockId;
-    private Integer effectPostStatus;
+    private int effectPostStatus;
 }

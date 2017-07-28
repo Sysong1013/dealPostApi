@@ -8,7 +8,6 @@ import java.util.List;
 /**
  * Created by zhanghaihua on 2017/3/2.
  */
-
 public class Order implements Serializable {
 
     private long orderId;
@@ -90,7 +89,7 @@ public class Order implements Serializable {
 
     @Override
     public String toString() {
-        String postTimeStr = null;
+        String postTimeStr = "";
         if (postTime != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             postTimeStr = sdf.format(postTime);

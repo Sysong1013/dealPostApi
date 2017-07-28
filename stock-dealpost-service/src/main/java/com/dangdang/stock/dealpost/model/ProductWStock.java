@@ -11,9 +11,9 @@ import lombok.ToString;
 @Getter
 @ToString
 public class ProductWStock {
-    private Long productId;
-    private Integer warehouseId;
-    private Integer opNum;
-    private Integer stockTypeId;
-    private Integer effectPostQuantity;
+    private long productId;
+    private int warehouseId;
+    private int opNum;
+    private int stockTypeId;
+    private int effectPostQuantity;
 }

@@ -5,7 +5,7 @@
     <property name="log.charset" value="UTF-8"/>
     <property name="log.maxHistory" value="60"/>
     <property name="log.pattern" value="[%-5level] %date --%thread-- [%logger] %msg %n"/>
-    <property name="log.async.queue.size" value="1024"/>
+    <property name="log.async.queue.size" value="4096"/>
     <property name="infoLogBase" value="/data/log"/>
     <property name="errorLogBase" value="/var/log/errorinfo"/>
 
@@ -22,7 +22,7 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${infoLogBase}/${log.context.name}/common.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${baseLogPath}/${contextName}/common.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <fileNamePattern>${infoLogBase}/${contextName}/common.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
             <maxHistory>${log.maxHistory}</maxHistory>
         </rollingPolicy>
         <encoder charset="${log.charset}">
@@ -36,6 +36,12 @@
         <appender-ref ref="FILE"/>
     </appender>
 
+    <appender name="ASYNC_limit" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>${log.async.queue.size}</queueSize>
+        <appender-ref ref="limitLogAppender"/>
+    </appender>
+
     <appender name="limitLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${infoLogBase}/${contextName}/limit.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -45,6 +51,12 @@
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %msg%n</pattern>
         </encoder>
+    </appender>
+
+    <appender name="ASYNC_main" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>${log.async.queue.size}</queueSize>
+        <appender-ref ref="mainLogAppender"/>
     </appender>
 
     <appender name="mainLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -95,12 +107,12 @@
 
     <logger name="main-log" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="mainLogAppender"/>
+        <appender-ref ref="ASYNC_main"/>
     </logger>
 
     <logger name="limit-log" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="limitLogAppender"/>
+        <appender-ref ref="ASYNC_limit"/>
     </logger>
 
     <root level="INFO">

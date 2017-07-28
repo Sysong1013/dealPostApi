@@ -16,7 +16,6 @@
 			<includes>
 				<include>*.properties</include>
 				<include>/META-INF/spring/*</include>
-				<include>/META-INF/mybatis/*</include>
 				<include>*.xml</include>
 			</includes>
 			<excludes>

@@ -1,10 +1,13 @@
 package com.dangdang.stock.dealpost.dao;
 
 import com.dangdang.stock.dealpost.model.PostSTQueue;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -16,41 +19,35 @@ import java.util.List;
  */
 @Repository
 public class PostStockTriggerQueueDao {
+
     @Resource
     private JdbcTemplate jdbcTemplate;
 
     private final String sql = "INSERT INTO " +
             "post_stock_trigger_queue_bak (order_id,product_id,warehouse_id,op_num,op_source_id,cart_post_stock_id" +
             ",cart_post_status,stock_type_id,creation_date,last_changed_date,cart_post_date,effect_post_status) " +
-            "VALUES ";
+            "VALUES (?,?,?,?,2,?,0,?,now(),now(),now(),?)";
 
-    public void insertTriggerQueueBatch(List<PostSTQueue> postSTQueueList) {
-        jdbcTemplate.execute(buildSql(postSTQueueList));
-    }
+    public void insertTriggerQueueBatch(final List<PostSTQueue> postSTQueueList) {
 
-    private String buildSql(List<PostSTQueue> postSTQueueList) {
-        StringBuilder sb = new StringBuilder();
-        int size = postSTQueueList.size();
-        int index = 0;
-        for (PostSTQueue postSTQueue : postSTQueueList) {
-            index++;
-            sb.append("(");
-            sb.append(postSTQueue.getOrderId());
-            sb.append(",").append(postSTQueue.getProductId());
-            sb.append(",").append(postSTQueue.getWarehouseId());
-            sb.append(",").append(postSTQueue.getOpNum());
-            sb.append(",2");
-            sb.append(",").append(postSTQueue.getCartPostStockId());
-            sb.append(",0");
-            sb.append(",").append(postSTQueue.getStockTypeId());
-            sb.append(",now(),now(),now()");
-            sb.append(",").append(postSTQueue.getEffectPostStatus());
-            if (index < size) {
-                sb.append("),");
-            } else {
-                sb.append(")");
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
+                PostSTQueue postSTQueue = postSTQueueList.get(i);
+                preparedStatement.setLong(1, postSTQueue.getOrderId());
+                preparedStatement.setLong(2, postSTQueue.getProductId());
+                preparedStatement.setInt(3, postSTQueue.getWarehouseId());
+                preparedStatement.setInt(4, postSTQueue.getOpNum());
+                preparedStatement.setString(5, postSTQueue.getCartPostStockId());
+                preparedStatement.setInt(6, postSTQueue.getStockTypeId());
+                preparedStatement.setInt(7, postSTQueue.getEffectPostStatus());
             }
-        }
-        return sql + sb.toString();
+
+            @Override
+            public int getBatchSize() {
+                return postSTQueueList.size();
+            }
+        });
     }
+
 }

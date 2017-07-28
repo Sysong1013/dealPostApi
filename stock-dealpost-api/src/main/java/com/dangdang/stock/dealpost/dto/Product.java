@@ -5,18 +5,16 @@ import java.io.Serializable;
 /**
  * Created by zhanghaihua on 2017/3/2.
  */
-
-
-public class Product implements Serializable, Comparable<Product> {
+public class Product implements Serializable {
     private long productId;
     private int warehouseId;
     private int opNum;
-    private Integer stockTypeId;
+    private int stockTypeId;
     private String sourceIds;
-    private Integer isPreSale;
-    private Integer postType;
-    private Integer productType;
-    private Integer parentId;
+    private boolean isPreSale;
+    private boolean isTsOrAllotType;
+    private int productType;
+    private int parentId;
 
     /**
      * Getter for property 'productId'.
@@ -77,7 +75,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @return Value for property 'stockTypeId'.
      */
-    public Integer getStockTypeId() {
+    public int getStockTypeId() {
         return stockTypeId;
     }
 
@@ -86,7 +84,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @param stockTypeId Value to set for property 'stockTypeId'.
      */
-    public void setStockTypeId(Integer stockTypeId) {
+    public void setStockTypeId(int stockTypeId) {
         this.stockTypeId = stockTypeId;
     }
 
@@ -109,39 +107,39 @@ public class Product implements Serializable, Comparable<Product> {
     }
 
     /**
-     * Getter for property 'isPreSale'.
+     * Getter for property 'preSale'.
      *
-     * @return Value for property 'isPreSale'.
+     * @return Value for property 'preSale'.
      */
-    public Integer getIsPreSale() {
+    public boolean isPreSale() {
         return isPreSale;
     }
 
     /**
-     * Setter for property 'isPreSale'.
+     * Setter for property 'preSale'.
      *
-     * @param isPreSale Value to set for property 'isPreSale'.
+     * @param preSale Value to set for property 'preSale'.
      */
-    public void setIsPreSale(Integer isPreSale) {
-        this.isPreSale = isPreSale;
+    public void setPreSale(boolean preSale) {
+        isPreSale = preSale;
     }
 
     /**
-     * Getter for property 'postType'.
+     * Getter for property 'tsOrAllotType'.
      *
-     * @return Value for property 'postType'.
+     * @return Value for property 'tsOrAllotType'.
      */
-    public Integer getPostType() {
-        return postType;
+    public boolean isTsOrAllotType() {
+        return isTsOrAllotType;
     }
 
     /**
-     * Setter for property 'postType'.
+     * Setter for property 'tsOrAllotType'.
      *
-     * @param postType Value to set for property 'postType'.
+     * @param tsOrAllotType Value to set for property 'tsOrAllotType'.
      */
-    public void setPostType(Integer postType) {
-        this.postType = postType;
+    public void setTsOrAllotType(boolean tsOrAllotType) {
+        isTsOrAllotType = tsOrAllotType;
     }
 
     /**
@@ -149,7 +147,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @return Value for property 'productType'.
      */
-    public Integer getProductType() {
+    public int getProductType() {
         return productType;
     }
 
@@ -158,7 +156,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @param productType Value to set for property 'productType'.
      */
-    public void setProductType(Integer productType) {
+    public void setProductType(int productType) {
         this.productType = productType;
     }
 
@@ -167,7 +165,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @return Value for property 'parentId'.
      */
-    public Integer getParentId() {
+    public int getParentId() {
         return parentId;
     }
 
@@ -176,7 +174,7 @@ public class Product implements Serializable, Comparable<Product> {
      *
      * @param parentId Value to set for property 'parentId'.
      */
-    public void setParentId(Integer parentId) {
+    public void setParentId(int parentId) {
         this.parentId = parentId;
     }
 
@@ -189,20 +187,9 @@ public class Product implements Serializable, Comparable<Product> {
                 ", stockTypeId=" + stockTypeId +
                 ", sourceIds='" + sourceIds + '\'' +
                 ", isPreSale=" + isPreSale +
-                ", postType=" + postType +
+                ", isTsOrAllotType=" + isTsOrAllotType +
                 ", productType=" + productType +
                 ", parentId=" + parentId +
                 '}';
-    }
-
-    @Override
-    public int compareTo(Product o) {
-        if (this.productId != o.getProductId()) {
-            return (this.productId < o.getProductId()) ? -1 : ((this.productId == o.getProductId()) ? 0 : 1);
-        }
-        if (this.warehouseId != o.getWarehouseId()) {
-            return (this.warehouseId < o.getWarehouseId()) ? -1 : ((this.warehouseId == o.getWarehouseId()) ? 0 : 1);
-        }
-        return 0;
     }
 }

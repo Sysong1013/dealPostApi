@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ApplicationContextProvider  implements ApplicationContextAware {
-    public static ApplicationContext context = null;
+
+    private static ApplicationContext context = null;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext)

@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 public class ResponseDTO implements Serializable {
 
-    private Integer errorCode;
+    private int errorCode;
     private String errorMessage;
 
     public ResponseDTO() {

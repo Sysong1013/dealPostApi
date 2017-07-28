@@ -12,6 +12,4 @@
         <module>stock-dealpost-api</module>
         <module>stock-dealpost-service</module>
     </modules>
-
-
 </project>

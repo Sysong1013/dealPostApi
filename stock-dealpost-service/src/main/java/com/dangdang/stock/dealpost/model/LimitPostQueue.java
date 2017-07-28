@@ -17,11 +17,11 @@ import java.util.Date;
 @Getter
 @ToString
 public class LimitPostQueue {
-    private Long orderId;
-    private Long productId;
-    private Integer warehouseId;
-    private Integer opNum;
-    private Integer stockTypeId;
+    private long orderId;
+    private long productId;
+    private int warehouseId;
+    private int opNum;
+    private int stockTypeId;
     private Date orderTime;
     private String source;
     private String sourceIds;
