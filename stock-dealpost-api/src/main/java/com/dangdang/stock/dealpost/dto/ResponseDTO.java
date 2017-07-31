@@ -5,7 +5,6 @@ import java.io.Serializable;
 /**
  * Created by zhanghaihua on 2017/3/2.
  */
-
 public class ResponseDTO implements Serializable {
 
     private int errorCode;

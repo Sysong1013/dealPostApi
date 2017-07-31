@@ -25,7 +25,7 @@
     <aop:config>
         <aop:aspect ref="daoWarnLog">
             <aop:pointcut id="warnLog_pointCut"
-                          expression="execution(public * com.dangdang.stock.dealpost.dao.*.*Batch(..))"/>
+                          expression="execution(public * com.dangdang.stock.dealpost.dao.*.*(..))"/>
             <aop:around pointcut-ref="warnLog_pointCut" method="warnLog"/>
         </aop:aspect>
     </aop:config>

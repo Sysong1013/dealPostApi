@@ -14,7 +14,7 @@ public class Product implements Serializable {
     private boolean isPreSale;
     private boolean isTsOrAllotType;
     private int productType;
-    private int parentId;
+    private long parentId;
 
     /**
      * Getter for property 'productId'.
@@ -165,7 +165,7 @@ public class Product implements Serializable {
      *
      * @return Value for property 'parentId'.
      */
-    public int getParentId() {
+    public long getParentId() {
         return parentId;
     }
 
@@ -174,7 +174,7 @@ public class Product implements Serializable {
      *
      * @param parentId Value to set for property 'parentId'.
      */
-    public void setParentId(int parentId) {
+    public void setParentId(long parentId) {
         this.parentId = parentId;
     }
 

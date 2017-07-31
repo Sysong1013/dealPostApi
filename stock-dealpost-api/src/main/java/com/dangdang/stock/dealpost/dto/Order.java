@@ -13,6 +13,7 @@ public class Order implements Serializable {
     private long orderId;
     private Date postTime;
     private String cartPostStockId;
+    private boolean isNoConsistency;
     private List<Product> productList;
 
     /**
@@ -70,6 +71,24 @@ public class Order implements Serializable {
     }
 
     /**
+     * Getter for property 'noConsistency'.
+     *
+     * @return Value for property 'noConsistency'.
+     */
+    public boolean isNoConsistency() {
+        return isNoConsistency;
+    }
+
+    /**
+     * Setter for property 'noConsistency'.
+     *
+     * @param noConsistency Value to set for property 'noConsistency'.
+     */
+    public void setNoConsistency(boolean noConsistency) {
+        isNoConsistency = noConsistency;
+    }
+
+    /**
      * Getter for property 'productList'.
      *
      * @return Value for property 'productList'.
@@ -98,6 +117,7 @@ public class Order implements Serializable {
                 "orderId=" + orderId +
                 ", postTime=" + postTimeStr +
                 ", cartPostStockId='" + cartPostStockId + '\'' +
+                ", isNoConsistency=" + isNoConsistency +
                 ", productList=" + productList +
                 '}';
     }

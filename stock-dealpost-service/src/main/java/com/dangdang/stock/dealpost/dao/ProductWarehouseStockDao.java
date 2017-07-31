@@ -21,32 +21,34 @@ public class ProductWarehouseStockDao {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final String SQL1 =
-            "UPDATE product_warehouse_stock \n" +
+    private final static String SQL1 =
+            "UPDATE product_warehouse_stock " +
                     "SET post_stock_quantity = IFNULL(post_stock_quantity, 0) + %d," +
                     "   effect_post_quantity = IFNULL(effect_post_quantity,0) + %d," +
-                    "   post_last_changed_date = now(),last_changed_date = now() \n" +
+                    "   post_last_changed_date = now(),last_changed_date = now() " +
                     "WHERE product_id = %d AND warehouse_id = %d AND stock_type_id = 0 " +
                     "   AND (stock_quantity + IFNULL(stock_quantity_ts,0) + IFNULL(stock_quantity_allot,0) " +
                     "- IFNULL(post_stock_quantity,0) >= %d)";
 
-    private final String SQL2 =
+    private final static String SQL1_NO_CONSISTENCY =
+            "UPDATE product_warehouse_stock " +
+                    "SET post_stock_quantity = IFNULL(post_stock_quantity, 0) + %d," +
+                    "   effect_post_quantity = IFNULL(effect_post_quantity,0) + %d," +
+                    "   post_last_changed_date = now(),last_changed_date = now() " +
+                    "WHERE product_id = %d AND warehouse_id = %d AND stock_type_id = 0";
+
+    private final static String SQL2 =
             "UPDATE product_warehouse_stock " +
                     "SET effect_post_quantity = IFNULL(effect_post_quantity,0) + %d " +
                     "WHERE product_id = %d AND warehouse_id = %d AND stock_type_id = 0";
 
-    private final String SQL3 =
+    private final static String SQL3 =
             "UPDATE product_warehouse_stock " +
                     "SET post_stock_quantity = IFNULL(post_stock_quantity,0) + %d" +
                     "   ,post_last_changed_date = now(),last_changed_date = now() " +
                     "WHERE product_id = %d AND warehouse_id = %d AND stock_type_id = %d";
 
-    public int[] updateStockBatch(List<ProductWStock> productWStockList) {
-        return jdbcTemplate.batchUpdate(buildSql(productWStockList));
-    }
-
-
-    private String[] buildSql(List<ProductWStock> productWStockList) {
+    public int[] updateStockBatch(List<ProductWStock> productWStockList, boolean isNoConsistency) {
         ArrayList<String> strArr = new ArrayList<>();
         for (ProductWStock productWStock : productWStockList) {
             long productId = productWStock.getProductId();
@@ -55,14 +57,17 @@ public class ProductWarehouseStockDao {
             int effectPostQuantity = productWStock.getEffectPostQuantity();
             int stockTypeId = productWStock.getStockTypeId();
             if (stockTypeId == 0) {
-                strArr.add(String.format(SQL1, opNum, effectPostQuantity, productId, warehouseId, opNum));
-            } else if (stockTypeId > 1) {
+                if (!isNoConsistency) {
+                    strArr.add(String.format(SQL1, opNum, effectPostQuantity, productId, warehouseId, opNum));
+                } else {
+                    strArr.add(String.format(SQL1_NO_CONSISTENCY, opNum, effectPostQuantity, productId, warehouseId));
+                }
+            } else {
                 strArr.add(String.format(SQL2, effectPostQuantity, productId, warehouseId));
                 strArr.add(String.format(SQL3, opNum, productId, warehouseId, stockTypeId));
             }
         }
-        return strArr.toArray(new String[strArr.size()]);
+        return jdbcTemplate.batchUpdate(strArr.toArray(new String[strArr.size()]));
     }
-
 
 }

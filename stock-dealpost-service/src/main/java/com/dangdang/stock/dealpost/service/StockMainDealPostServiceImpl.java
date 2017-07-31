@@ -6,7 +6,7 @@ import com.dangdang.modules.hestia.logger.AppType;
 import com.dangdang.modules.hestia.logger.ErrorInfo;
 import com.dangdang.stock.api.StockDealPostService;
 import com.dangdang.stock.dealpost.common.ApplicationContextProvider;
-import com.dangdang.stock.dealpost.common.MyRuntimeException;
+import com.dangdang.stock.dealpost.common.BizException;
 import com.dangdang.stock.dealpost.dao.LimitPostQueueDao;
 import com.dangdang.stock.dealpost.dao.PostStockTriggerQueueDao;
 import com.dangdang.stock.dealpost.dao.ProductWarehouseStockDao;
@@ -19,7 +19,6 @@ import com.dangdang.stock.dealpost.model.ProductWStock;
 import com.dangdang.stock.dealpost.util.SystemConstant;
 import com.dangdang.stock.dealpost.util.ThreadPoolUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -29,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,29 +47,29 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
     private Logger slaLog = LoggerFactory.getLogger("sla-log");
 
     //productList count limit
-    private final int LIMIT_NUM = 200;
+    private final static int LIMIT_NUM = 200;
 
     //main process timeout,time_unit:ms
     // for productList count in (0,50]
-    private final int TIME_OUT_LOW = 100;
+    private final static int TIME_OUT_LOW = 10000;
     // for productList count in (50,100]
-    private final int TIME_OUT_MID = 300;
+    private final static int TIME_OUT_MID = 300;
     // for productList count (100,~]
-    private final int TIME_OUT_HIG = 500;
+    private final static int TIME_OUT_HIG = 500;
     //virtual product type
-    private final int VIRTUAL_PRODUCT_TYPE = 9;
+    private final static int VIRTUAL_PRODUCT_TYPE = 9;
 
     //the type of post stock's source,101:promotion 102:common
-    private final String SOURCE_PROMOTION = "101";
+    private final static String SOURCE_PROMOTION = "101";
 
     //response success code
-    private final int RESP_OK = 1;
+    private final static int RESP_OK = 1;
     //response failed code
-    private final int RESP_FAILED = 0;
+    private final static int RESP_FAILED = 0;
     //response success message
-    private final String RESP_OK_MSG = "SUCCESS";
+    private final static String RESP_OK_MSG = "SUCCESS";
     // pattern int>0
-    private final Pattern PATTERN = Pattern.compile("[1-9][0-9]*");
+    private final static Pattern PATTERN_POSITIVE_NUMBER = Pattern.compile("[1-9][0-9]*");
 
     @Resource
     private LimitPostQueueDao limitPostQueueDao;
@@ -91,13 +93,16 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
 
     public ResponseDTO postStock(final Order order) {
         long startTime = System.currentTimeMillis();
+        mainLog.info("ApiParameter--->>>{},ClientIp:{}", order, RpcContext.getContext().getRemoteHost());
+        //异步调用时,为了@Transactional注解起作用,应该使用通过getBean()方法获取的Proxy对象调用mainPostStock()方法
+        //由于afterPropertiesSet()方法中无法获取Proxy对象(因为还没有构建出), 所以写到该方法中
+        //第一次执行时多个并发的线程有可能同时进入if语句中,但是因为获取的都是相同的对象,顶多是重复初始化而已,不需要为此加锁
         if (selfService == null) {
             selfService = ApplicationContextProvider.getContext().getBean(getClass());
         }
         boolean successFlag = true;
         int timeout = 0;
         try {
-            mainLog.info("ApiParameter--->>>{},ClientIp:{}", order, RpcContext.getContext().getRemoteHost());
             checkOrder(order);
             sortProducts(order);
             timeout = getTimeoutTimes(order);
@@ -106,11 +111,6 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             executorService.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    //异步调用时,为了@Transactional注解起作用
-                    // ,应该使用通过getBean()方法获取的Proxy对象调用mainPostStock()方法
-                    //由于afterPropertiesSet()方法中无法获取Proxy对象(因为还没有构建出), 所以写到该方法中
-                    //第一次执行时多个并发的线程有可能同时进入if语句中
-                    // ,但是因为获取的都是相同的对象,顶多是重复初始化而已,不需要为此加锁
                     selfService.mainPostStock(order);
                     return null;
                 }
@@ -122,15 +122,17 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             return new ResponseDTO(RESP_OK, RESP_OK_MSG);
         } catch (Exception e) {
             if (e instanceof TimeoutException) {
-                mainLog.info("TimeoutException!orderId:{},useTimes > {}ms!", order.getOrderId(), timeout);
+                mainLog.info("TimeoutException!orderId:{},useTimes>{}ms", order.getOrderId(), timeout);
                 executeLimitPostStockAsync(order);
                 return new ResponseDTO(RESP_OK, RESP_OK_MSG);
-            } else if (e instanceof MyRuntimeException &&
-                    ((MyRuntimeException) e).getCode() == MyRuntimeException.PARAMETER_INVALID_EXCEPTION) {
+            } else if (e instanceof BizException &&
+                    ((BizException) e).getCode() == BizException.PARAMETER_INVALID_EXCEPTION) {
+                //request parameters exception
                 mainLog.info("Invalid parameter!orderId:{},{}", order.getOrderId(), e.getMessage());
             } else {
-                if (!(e instanceof ExecutionException) && !(e instanceof MyRuntimeException)) {
-                    ErrorInfo.builder().message("OrderId:" + order.getOrderId() + ",post stock FAILED!")
+                //exclude mainPostStock BizException
+                if (!(e.getCause() != null && e.getCause() instanceof BizException)) {
+                    ErrorInfo.builder().message("deal_post_stock receive an Exception")
                             .module(SystemConstant.MODULE_NAME)
                             .addParam("orderId", order.getOrderId() + "")
                             .exception(e).build().error(log);
@@ -138,7 +140,8 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             }
             successFlag = false;
             return new ResponseDTO(RESP_FAILED
-                    , "FAILURE!orderId:" + order.getOrderId() + "," + e.getCause().getMessage());
+                    , "FAILURE!orderId:" + order.getOrderId() + ","
+                    + (e.getCause() == null ? e.getMessage() : e.getCause().getMessage()));
         } finally {
             mainLog.info("ApiResponse--->>>orderId:{},successFlag:{},useTimes:{}ms"
                     , order.getOrderId(), successFlag, System.currentTimeMillis() - startTime);
@@ -152,11 +155,15 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         Collections.sort(order.getProductList(), new Comparator<Product>() {
             @Override
             public int compare(Product o1, Product o2) {
-                if (o1.getProductId() != o2.getProductId()) {
-                    return (o1.getProductId() < o2.getProductId()) ? -1 : ((o1.getProductId() == o2.getProductId()) ? 0 : 1);
+                long p1 = o1.getProductId();
+                long p2 = o2.getProductId();
+                if (p1 != p2) {
+                    return (p1 < p2) ? -1 : 1;
                 }
-                if (o1.getWarehouseId() != o2.getWarehouseId()) {
-                    return (o1.getWarehouseId() < o2.getWarehouseId()) ? -1 : ((o1.getWarehouseId() == o2.getWarehouseId()) ? 0 : 1);
+                int w1 = o1.getWarehouseId();
+                int w2 = o2.getWarehouseId();
+                if (w1 != w2) {
+                    return (w1 < w2) ? -1 : 1;
                 }
                 return 0;
             }
@@ -177,74 +184,74 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
     private void checkOrder(Order order) {
 
         if (order == null) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "order is null!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "order is null!");
         }
 
         if (order.getOrderId() <= 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "orderId <= 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "orderId <= 0!");
         }
 
         if (order.getPostTime() == null) {
             order.setPostTime(new Date());
         }
 
-        if (StringUtils.isEmpty(order.getCartPostStockId())) {
+        if (order.getCartPostStockId() == null || order.getCartPostStockId().trim().length() == 0) {
             order.setCartPostStockId("-1");
         }
 
         List<Product> productList = order.getProductList();
         if (productList == null || productList.size() > LIMIT_NUM) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "productList is null or counts >" + LIMIT_NUM);
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productList is null or counts >" + LIMIT_NUM);
         }
 
         for (Product product : order.getProductList()) {
             if (product == null) {
-                throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "product is null!");
+                throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "product is null!");
             }
             checkProduct(product);
         }
     }
 
-    private boolean isRightNumeric(String str) {
-        Matcher isNum = PATTERN.matcher(str);
+    private boolean isValidNumeric(String str) {
+        Matcher isNum = PATTERN_POSITIVE_NUMBER.matcher(str);
         return isNum.matches();
     }
 
     private void checkProduct(Product product) {
         if (product.getProductId() <= 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "productId:" + product.getProductId() + " <= 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productId:" + product.getProductId() + " <= 0!");
         }
         if (product.getWarehouseId() <= 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "warehouseId:" + product.getWarehouseId() + " <= 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "warehouseId:" + product.getWarehouseId() + " <= 0!");
         }
 
         if (product.getOpNum() <= 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "opNum:" + product.getOpNum() + " <= 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "opNum:" + product.getOpNum() + " <= 0!");
         }
 
         if (product.getStockTypeId() < 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "stockTypeId:" + product.getStockTypeId() + " < 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "stockTypeId:" + product.getStockTypeId() + " < 0!");
         }
 
 
-        if (product.getSourceIds() == null || product.getSourceIds().trim().length() == 0) {
+        if (product.getSourceIds() == null) {
             product.setSourceIds("");
         }
-        if (product.getSourceIds().length() > 0) {
-            String[] sourceIdArr = product.getSourceIds().split(",");
-            for (String sourceId : sourceIdArr) {
-                if (!isRightNumeric(sourceId)) {
-                    throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
-                }
+
+        String[] sourceIdArr = product.getSourceIds().split(",");
+        for (String sourceId : sourceIdArr) {
+            if (!isValidNumeric(sourceId)) {
+                throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
             }
         }
 
+
         if (product.getParentId() < 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "parentId:" + product.getParentId() + " < 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "parentId:" + product.getParentId() + " < 0!");
         }
 
         if (product.getProductType() < 0) {
-            throw new MyRuntimeException(MyRuntimeException.PARAMETER_INVALID_EXCEPTION, "productType:" + product.getProductType() + " < 0!");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productType:" + product.getProductType() + " < 0!");
         }
     }
 
@@ -258,6 +265,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
     }
 
     private void limitPostStock(Order order) {
+        long startTime = System.currentTimeMillis();
         List<LimitPostQueue> limitPostQueueList = new ArrayList<>();
         try {
             long orderId = order.getOrderId();
@@ -289,11 +297,13 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                 }
             }
             limitPostQueueDao.insertLimitQueueBatch(limitPostQueueList);
-            limitLog.info("SUCCESS!orderId:{},insert limit_post_queue successful.", orderId);
+            limitLog.info("SUCCESS!orderId:{},insert limit_post_queue successful,useTimes:{}ms"
+                    , orderId, System.currentTimeMillis() - startTime);
         } catch (Exception e) {
             ErrorInfo.builder().message("Insert limit_post_queue failed!")
                     .module(SystemConstant.MODULE_NAME)
                     .addParam("limitPostQueueList", limitPostQueueList + "")
+                    .addParam("useTime", (System.currentTimeMillis() - startTime) + "")
                     .exception(e).build().error(log);
         }
     }
@@ -363,26 +373,25 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                     postSTQueueList.add(postSTQueue);
                 }
             }
-            int[] resultArr = productWarehouseStockDao.updateStockBatch(productWStockList);
+            int[] resultArr = productWarehouseStockDao.updateStockBatch(productWStockList,order.isNoConsistency());
             int count = 0;
             for (int i : resultArr) {
                 count += i;
             }
             if (count != productWStockList.size() + lockStockCount) {
-                mainLog.info("FAILED!update p_ware_stock failed,useTime:{}ms,orderId:{},{}."
-                        , System.currentTimeMillis() - startTime, orderId, order.getProductList());
-                throw new MyRuntimeException(MyRuntimeException.MAIN_POST_EXCEPTION, "Main'stockes post failed");
+                mainLog.info("FAILED!orderId:{},update p_ware_stock failed,useTime:{}ms"
+                        , orderId, System.currentTimeMillis() - startTime);
+                throw new BizException(BizException.MAIN_POST_EXCEPTION, "mainPost stock failed");
             }
             //insert post_stock_trigger_queue
             postStockTriggerQueueDao.insertTriggerQueueBatch(postSTQueueList);
-            mainLog.info("SUCCESS!orderId:{},main'stockes post executing successful", orderId);
-        } catch (Exception e) {
+            mainLog.info("SUCCESS!orderId:{},mainPost stock successful,useTime:{}ms"
+                    , orderId, System.currentTimeMillis() - startTime);
+        } catch (RuntimeException e) {
             if (e instanceof DuplicateKeyException) {
                 mainLog.info("DuplicateKeyException!orderId:{}", order.getOrderId());
-            } else if (e instanceof MyRuntimeException) {
-                throw new MyRuntimeException(MyRuntimeException.MAIN_POST_EXCEPTION, e.getMessage());
             } else {
-                throw new RuntimeException(e);
+                throw e;
             }
         }
     }

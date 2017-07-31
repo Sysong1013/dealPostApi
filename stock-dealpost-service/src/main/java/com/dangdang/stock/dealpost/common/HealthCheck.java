@@ -24,7 +24,7 @@ public class HealthCheck {
 
     @Value("${healthCheck.port}")
     private int port;
-    private final String HEALTH_CHECK_URL = "/dealpost/healthcheck";
+    private final static String HEALTH_CHECK_URL = "/dealpost/healthcheck";
 
     public void init() {
         PathHandler handler = new PathHandler();

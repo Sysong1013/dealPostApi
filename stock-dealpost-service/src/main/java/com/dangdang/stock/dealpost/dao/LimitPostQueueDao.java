@@ -24,13 +24,13 @@ public class LimitPostQueueDao {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final String sql = "INSERT INTO limit_post_queue " +
+    private final static String SQL = "INSERT INTO limit_post_queue " +
             "(order_id,product_id,warehouse_id,op_num,stock_type_id,order_time,source,source_id,delmark,creation_date)" +
-            "VALUES (?,?,?,?,?,?,?,?,0,now()) ";
+            "VALUES (?,?,?,?,?,?,?,?,0,now())";
 
     public void insertLimitQueueBatch(final List<LimitPostQueue> limitPostQueueList) {
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        jdbcTemplate.batchUpdate(SQL, new BatchPreparedStatementSetter() {
 
             @Override
             public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {

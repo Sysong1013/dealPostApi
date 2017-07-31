@@ -23,14 +23,14 @@ public class PostStockTriggerQueueDao {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
-    private final String sql = "INSERT INTO " +
+    private final static String SQL = "INSERT INTO " +
             "post_stock_trigger_queue_bak (order_id,product_id,warehouse_id,op_num,op_source_id,cart_post_stock_id" +
             ",cart_post_status,stock_type_id,creation_date,last_changed_date,cart_post_date,effect_post_status) " +
             "VALUES (?,?,?,?,2,?,0,?,now(),now(),now(),?)";
 
     public void insertTriggerQueueBatch(final List<PostSTQueue> postSTQueueList) {
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        jdbcTemplate.batchUpdate(SQL, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
                 PostSTQueue postSTQueue = postSTQueueList.get(i);
