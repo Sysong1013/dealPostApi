@@ -22,16 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,7 +49,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
 
     //main process timeout,time_unit:ms
     // for productList count in (0,50]
-    private final static int TIME_OUT_LOW = 10000;
+    private final static int TIME_OUT_LOW = 100;
     // for productList count in (50,100]
     private final static int TIME_OUT_MID = 300;
     // for productList count (100,~]
@@ -70,6 +68,10 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
     private final static String RESP_OK_MSG = "SUCCESS";
     // pattern int>0
     private final static Pattern PATTERN_POSITIVE_NUMBER = Pattern.compile("[1-9][0-9]*");
+
+    // switch of post stock synchronized
+    @Value("${application.syncSwitch}")
+    private int syncSwitch;
 
     @Resource
     private LimitPostQueueDao limitPostQueueDao;
@@ -108,13 +110,19 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             timeout = getTimeoutTimes(order);
 
             //submit mainPostStock and get result
-            executorService.submit(new Callable<Void>() {
+            Future<Void> result = executorService.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
                     selfService.mainPostStock(order);
                     return null;
                 }
-            }).get(timeout, TimeUnit.MILLISECONDS);
+            });
+
+            if (syncSwitch == 0) {
+                result.get(timeout, TimeUnit.MILLISECONDS);
+            } else {
+                result.get();
+            }
 
             //asynchronized insert limit_post_queue task task
             executeLimitPostStockAsync(order);
@@ -236,7 +244,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
 
         if (product.getSourceIds() == null) {
             product.setSourceIds("");
-        }else {
+        } else {
             String[] sourceIdArr = product.getSourceIds().split(",");
             for (String sourceId : sourceIdArr) {
                 if (!isValidNumeric(sourceId)) {
@@ -373,7 +381,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                     postSTQueueList.add(postSTQueue);
                 }
             }
-            int[] resultArr = productWarehouseStockDao.updateStockBatch(productWStockList,order.isNoConsistency());
+            int[] resultArr = productWarehouseStockDao.updateStockBatch(productWStockList, order.isNoConsistency());
             int count = 0;
             for (int i : resultArr) {
                 count += i;
