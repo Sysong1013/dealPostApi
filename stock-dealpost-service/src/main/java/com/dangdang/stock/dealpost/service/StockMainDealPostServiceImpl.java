@@ -236,12 +236,12 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
 
         if (product.getSourceIds() == null) {
             product.setSourceIds("");
-        }
-
-        String[] sourceIdArr = product.getSourceIds().split(",");
-        for (String sourceId : sourceIdArr) {
-            if (!isValidNumeric(sourceId)) {
-                throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
+        }else {
+            String[] sourceIdArr = product.getSourceIds().split(",");
+            for (String sourceId : sourceIdArr) {
+                if (!isValidNumeric(sourceId)) {
+                    throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
+                }
             }
         }
 
