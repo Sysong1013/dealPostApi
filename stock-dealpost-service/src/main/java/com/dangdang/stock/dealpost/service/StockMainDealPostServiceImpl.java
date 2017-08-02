@@ -133,15 +133,14 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                 mainLog.info("TimeoutException!orderId:{},useTimes>{}ms", order.getOrderId(), timeout);
                 executeLimitPostStockAsync(order);
                 return new ResponseDTO(RESP_OK, RESP_OK_MSG);
-            } else if (e instanceof BizException) {
-                if (((BizException) e).getCode() == BizException.PARAMETER_INVALID_EXCEPTION) {
-                    //request parameters exception
-                    mainLog.info("Invalid parameter!orderId:{},{}", order.getOrderId(), e.getMessage());
-                } else if (((BizException) e).getCode() == BizException.DUPLICATE_KEY_EXCEPTION) {
-                    return new ResponseDTO(RESP_OK, RESP_OK_MSG);
-                }
+            } else if (e.getCause() != null && e.getCause() instanceof DuplicateKeyException) {
+                //insert post_stock_trigger_queue duplicateKey exception
+                return new ResponseDTO(RESP_OK, RESP_OK_MSG);
+            } else if (e instanceof BizException && ((BizException) e).getCode() == BizException.PARAMETER_INVALID_EXCEPTION) {
+                //request parameters exception
+                mainLog.info("Invalid parameter!orderId:{},{}", order.getOrderId(), e.getMessage());
             } else {
-                //exclude mainPostStock BizException
+                //update product_warehouse_stock happen BizException
                 if (!(e.getCause() != null && e.getCause() instanceof BizException)) {
                     ErrorInfo.builder().message("deal_post_stock receive an Exception")
                             .module(SystemConstant.MODULE_NAME)
@@ -401,10 +400,8 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         } catch (RuntimeException e) {
             if (e instanceof DuplicateKeyException) {
                 mainLog.info("DuplicateKeyException!orderId:{}", order.getOrderId());
-                throw new BizException(BizException.DUPLICATE_KEY_EXCEPTION, "mainPost stock failed");
-            } else {
-                throw e;
             }
+            throw e;
         }
     }
 }
