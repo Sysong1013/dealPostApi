@@ -133,10 +133,13 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                 mainLog.info("TimeoutException!orderId:{},useTimes>{}ms", order.getOrderId(), timeout);
                 executeLimitPostStockAsync(order);
                 return new ResponseDTO(RESP_OK, RESP_OK_MSG);
-            } else if (e instanceof BizException &&
-                    ((BizException) e).getCode() == BizException.PARAMETER_INVALID_EXCEPTION) {
-                //request parameters exception
-                mainLog.info("Invalid parameter!orderId:{},{}", order.getOrderId(), e.getMessage());
+            } else if (e instanceof BizException) {
+                if (((BizException) e).getCode() == BizException.PARAMETER_INVALID_EXCEPTION) {
+                    //request parameters exception
+                    mainLog.info("Invalid parameter!orderId:{},{}", order.getOrderId(), e.getMessage());
+                } else if (((BizException) e).getCode() == BizException.DUPLICATE_KEY_EXCEPTION) {
+                    return new ResponseDTO(RESP_OK, RESP_OK_MSG);
+                }
             } else {
                 //exclude mainPostStock BizException
                 if (!(e.getCause() != null && e.getCause() instanceof BizException)) {
