@@ -10,12 +10,13 @@ import lombok.Getter;
  * @Modified By:
  */
 @Getter
-public class BizException extends RuntimeException{
+public class BizException extends RuntimeException {
     private int code;
     private String message;
 
-    public final static int MAIN_POST_EXCEPTION =100;
+    public final static int MAIN_POST_EXCEPTION = 100;
     public final static int PARAMETER_INVALID_EXCEPTION = 101;
+    public final static int DUPLICATE_KEY_EXCEPTION = 102;
 
     public BizException(int code, String message) {
         this.code = code;

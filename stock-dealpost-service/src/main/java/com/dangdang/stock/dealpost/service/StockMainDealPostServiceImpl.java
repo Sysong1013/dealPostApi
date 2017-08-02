@@ -398,6 +398,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         } catch (RuntimeException e) {
             if (e instanceof DuplicateKeyException) {
                 mainLog.info("DuplicateKeyException!orderId:{}", order.getOrderId());
+                throw new BizException(BizException.DUPLICATE_KEY_EXCEPTION, "mainPost stock failed");
             } else {
                 throw e;
             }
