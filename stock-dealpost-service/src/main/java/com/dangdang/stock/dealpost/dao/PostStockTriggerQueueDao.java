@@ -24,7 +24,7 @@ public class PostStockTriggerQueueDao {
     private JdbcTemplate jdbcTemplate;
 
     private final static String SQL = "INSERT INTO " +
-            "post_stock_trigger_queu (order_id,product_id,warehouse_id,op_num,op_source_id,cart_post_stock_id" +
+            "post_stock_trigger_queue (order_id,product_id,warehouse_id,op_num,op_source_id,cart_post_stock_id" +
             ",cart_post_status,stock_type_id,creation_date,last_changed_date,cart_post_date,effect_post_status) " +
             "VALUES (?,?,?,?,2,?,0,?,now(),now(),now(),?)";
 
