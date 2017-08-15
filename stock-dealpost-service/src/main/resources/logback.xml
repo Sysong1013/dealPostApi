@@ -46,7 +46,7 @@
             <pattern>%d{HH:mm:ss.SSS} %msg%n</pattern>
         </encoder>
     </appender>
-    
+
     <appender name="mainLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${infoLogBase}/${contextName}/main.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">

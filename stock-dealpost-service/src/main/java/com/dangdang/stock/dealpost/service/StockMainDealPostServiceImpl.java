@@ -210,8 +210,8 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         }
 
         List<Product> productList = order.getProductList();
-        if (productList == null || productList.size() > LIMIT_NUM) {
-            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productList is null or counts >" + LIMIT_NUM);
+        if (productList == null || productList.size() == 0 || productList.size() > LIMIT_NUM) {
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productList is null or size not in(0," + LIMIT_NUM+"]");
         }
 
         for (Product product : order.getProductList()) {
@@ -243,18 +243,16 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "stockTypeId:" + product.getStockTypeId() + " < 0!");
         }
 
-
         if (product.getSourceIds() == null) {
             product.setSourceIds("");
         } else {
-            String[] sourceIdArr = product.getSourceIds().split(",");
+            String[] sourceIdArr = product.getSourceIds().split(",",-1);
             for (String sourceId : sourceIdArr) {
                 if (!isValidNumeric(sourceId)) {
                     throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
                 }
             }
         }
-
 
         if (product.getParentId() < 0) {
             throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "parentId:" + product.getParentId() + " < 0!");
@@ -359,9 +357,11 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                             productWStock.setEffectPostQuantity(p.getOpNum());
                         }
                     } else {
+                        postSTQueue.setEffectPostStatus(2);
                         productWStock.setEffectPostQuantity(0);
                     }
                 } else {
+                    postSTQueue.setEffectPostStatus(2);
                     productWStock.setEffectPostQuantity(0);
                 }
 
