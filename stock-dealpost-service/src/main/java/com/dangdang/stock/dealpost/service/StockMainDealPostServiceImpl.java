@@ -211,7 +211,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
 
         List<Product> productList = order.getProductList();
         if (productList == null || productList.size() == 0 || productList.size() > LIMIT_NUM) {
-            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productList is null or size not in(0," + LIMIT_NUM+"]");
+            throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "productList is null or size not in(0," + LIMIT_NUM + "]");
         }
 
         for (Product product : order.getProductList()) {
@@ -246,7 +246,7 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         if (product.getSourceIds() == null) {
             product.setSourceIds("");
         } else {
-            String[] sourceIdArr = product.getSourceIds().split(",",-1);
+            String[] sourceIdArr = product.getSourceIds().split(",", -1);
             for (String sourceId : sourceIdArr) {
                 if (!isValidNumeric(sourceId)) {
                     throw new BizException(BizException.PARAMETER_INVALID_EXCEPTION, "sourceIds:" + product.getSourceIds() + " invalid!");
@@ -327,8 +327,8 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
         try {
             long orderId = order.getOrderId();
             for (Product p : order.getProductList()) {
-                //如果为促销品，且为虚拟母品，则过滤
-                if (p.getSourceIds().length() > 0 && p.getProductType() == VIRTUAL_PRODUCT_TYPE) {
+                //如果为虚拟母品(普通品、促销品),则过滤
+                if (p.getProductType() == VIRTUAL_PRODUCT_TYPE) {
                     continue;
                 }
                 PostSTQueue postSTQueue = new PostSTQueue();
@@ -347,27 +347,27 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                 postSTQueue.setStockTypeId(stockTypeId);
                 postSTQueue.setCartPostStockId(order.getCartPostStockId());
 
-                if (order.getCartPostStockId().equals("-1")) {
-                    if (!p.isPreSale()) {
-                        if (p.isTsOrAllotType()) {
-                            postSTQueue.setEffectPostStatus(0);
-                            productWStock.setEffectPostQuantity(0);
-                        } else {
-                            postSTQueue.setEffectPostStatus(1);
-                            productWStock.setEffectPostQuantity(p.getOpNum());
-                        }
-                    } else {
+                if (p.isTsOrAllotType()) {
+                    //虽然这可以不用set，因为默认都为0，但代码明确更好
+                    postSTQueue.setEffectPostStatus(0);
+                    productWStock.setEffectPostQuantity(0);
+                } else {
+                    if (p.isPreSale()) {
                         postSTQueue.setEffectPostStatus(2);
                         productWStock.setEffectPostQuantity(0);
+                    } else  {
+                        //以后新业务时，注意此处，当品为非虚拟母品、非暂存在途品、非预售品时
+                        //就走到此处逻辑
+                        postSTQueue.setEffectPostStatus(1);
+                        productWStock.setEffectPostQuantity(p.getOpNum());
                     }
-                } else {
-                    postSTQueue.setEffectPostStatus(2);
-                    productWStock.setEffectPostQuantity(0);
                 }
 
-                String key = p.getProductId() + "_" + p.getWarehouseId() + "_" + orderId + "_";
+                String key = "_" + p.getProductId() + "_" + p.getWarehouseId() + "_" + orderId + "_";
                 if (stockMap.containsKey(key)) {
                     stockMap.get(key).setOpNum(stockMap.get(key).getOpNum() + p.getOpNum());
+                    stockMap.get(key).setEffectPostQuantity(stockMap.get(key).getEffectPostQuantity()
+                            + productWStock.getEffectPostQuantity());
                 } else {
                     if (stockTypeId > 0) {
                         lockStockCount++;

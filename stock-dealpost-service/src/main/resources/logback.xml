@@ -94,12 +94,12 @@
     </logger>
 
     <logger name="main-log" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT" />
+        <!--<appender-ref ref="STDOUT" />-->
         <appender-ref ref="mainLogAppender"/>
     </logger>
 
     <logger name="limit-log" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT" />
+        <!--<appender-ref ref="STDOUT" />-->
         <appender-ref ref="limitLogAppender"/>
     </logger>
 
