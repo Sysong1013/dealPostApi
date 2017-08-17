@@ -124,14 +124,10 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
                 result.get();
             }
 
-            //asynchronized insert limit_post_queue task task
-            executeLimitPostStockAsync(order);
-
             return new ResponseDTO(RESP_OK, RESP_OK_MSG);
         } catch (Exception e) {
             if (e instanceof TimeoutException) {
                 mainLog.info("TimeoutException!orderId:{},useTimes>{}ms", order.getOrderId(), timeout);
-                executeLimitPostStockAsync(order);
                 return new ResponseDTO(RESP_OK, RESP_OK_MSG);
             } else if (e.getCause() != null && e.getCause() instanceof DuplicateKeyException) {
                 //insert post_stock_trigger_queue duplicateKey exception
@@ -397,6 +393,8 @@ public class StockMainDealPostServiceImpl implements StockDealPostService, Initi
             postStockTriggerQueueDao.insertTriggerQueueBatch(postSTQueueList);
             mainLog.info("SUCCESS!orderId:{},mainPost stock successful,useTime:{}ms"
                     , orderId, System.currentTimeMillis() - startTime);
+            //asynchronized insert limit_post_queue task task
+            executeLimitPostStockAsync(order);
         } catch (RuntimeException e) {
             if (e instanceof DuplicateKeyException) {
                 mainLog.info("DuplicateKeyException!orderId:{}", order.getOrderId());
