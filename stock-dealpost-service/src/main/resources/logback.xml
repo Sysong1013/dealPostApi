@@ -20,7 +20,7 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${infoLogBase}/${log.context.name}/common.log</file>
+        <file>${infoLogBase}/${contextName}/common.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${infoLogBase}/${contextName}/common.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
             <maxHistory>${log.maxHistory}</maxHistory>
@@ -36,12 +36,6 @@
         <appender-ref ref="FILE"/>
     </appender>
 
-    <appender name="ASYNC_limit" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>${log.async.queue.size}</queueSize>
-        <appender-ref ref="limitLogAppender"/>
-    </appender>
-
     <appender name="limitLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${infoLogBase}/${contextName}/limit.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -51,12 +45,6 @@
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %msg%n</pattern>
         </encoder>
-    </appender>
-
-    <appender name="ASYNC_main" class="ch.qos.logback.classic.AsyncAppender">
-        <discardingThreshold>0</discardingThreshold>
-        <queueSize>${log.async.queue.size}</queueSize>
-        <appender-ref ref="mainLogAppender"/>
     </appender>
 
     <appender name="mainLogAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -106,13 +94,13 @@
     </logger>
 
     <logger name="main-log" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="ASYNC_main"/>
+        <!--<appender-ref ref="STDOUT" />-->
+        <appender-ref ref="mainLogAppender"/>
     </logger>
 
     <logger name="limit-log" level="INFO" additivity="false">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="ASYNC_limit"/>
+        <!--<appender-ref ref="STDOUT" />-->
+        <appender-ref ref="limitLogAppender"/>
     </logger>
 
     <root level="INFO">

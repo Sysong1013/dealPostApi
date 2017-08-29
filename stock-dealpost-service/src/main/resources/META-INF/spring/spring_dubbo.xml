@@ -11,7 +11,7 @@
 
     <dubbo:registry protocol="zookeeper" address="${dubbo.zk.list}" timeout="30000" session="60000"/>
 
-    <dubbo:service  interface="com.dangdang.stock.api.StockDealPostService" ref="stockDealPostService"/>
+    <dubbo:service  interface="com.dangdang.stock.api.StockDealPostService" ref="stockDealPostService" connections="30"/>
 
     <dubbo:provider port="${dubbo.port}" threadpool="fixed" threads="50" timeout="3000" protocol="dubbo"/>
 
